@@ -4,7 +4,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 TICKERS = {
-    '0050': '0050.TW',
     '0056': '0056.TW',
 }
 
