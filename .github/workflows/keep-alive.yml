@@ -18,5 +18,5 @@ jobs:
         run: |
           echo "Ping $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           code=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://backtesting-3nnhm5sdwv8zb3zhqxn9jf.streamlit.app/)
+            https://wp0050backtest-mjgd8xb7sdua3cagenwh9a.streamlit.app/)
           echo "HTTP status => $code"
