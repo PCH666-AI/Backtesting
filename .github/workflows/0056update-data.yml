@@ -1,0 +1,39 @@
+name: 0056update csv from yfinance
+
+on:
+  schedule:
+    - cron: '0 19 * * *'          # 每天 UTC 19:00 = 台灣 +08 03:00
+  workflow_dispatch:              # 允許手動 Run
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write             # 讓內建 GITHUB_TOKEN 能 push 回 repo
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          pip install -q pandas yfinance
+
+      - name: Run update script
+        run: python update_data.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ $(git status --porcelain | wc -l) -gt 0 ]]; then
+            git add *_歷史股價.csv *_歷史股利.csv
+            git commit -m "chore: auto-update CSV ($(date +'%Y-%m-%d'))"
+            git push
+          else
+            echo "No CSV changes — skip commit."
+          fi
