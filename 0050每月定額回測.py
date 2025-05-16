@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# 0050 / 0056 每月定額回測（Streamlit 版）
+# 0050 / 0056 每月定額 NT$10,000 回測（簡化版）
 # ------------------------------------------------------------
 import streamlit as st
 st.set_page_config(page_title='台股 ETF 定期定額回測', layout='wide')
@@ -11,7 +11,7 @@ from matplotlib.pyplot import MultipleLocator
 import matplotlib.font_manager as fm
 from pathlib import Path
 
-# ---------- 中文字型（與 .py 同層） --------------------------
+# ─── 中文字型（與 .py 同層） ─────────────────────────────
 font_path = Path(__file__).parent / 'NotoSansTC-Regular.otf'
 if font_path.exists():
     fm.fontManager.addfont(str(font_path))
@@ -19,17 +19,16 @@ if font_path.exists():
 
 pd.set_option('mode.chained_assignment', None)
 
-# ---------- Streamlit 互動區 ---------------------------------
+# ─── Streamlit 側邊欄 ───────────────────────────────────
 etf = st.sidebar.selectbox('選擇 ETF', ('0050', '0056'), index=0)
-monthly = st.sidebar.number_input('每月投入金額 (NT$)', 1000, 50000, 10000, step=1000)
-st.sidebar.caption('➡ 右側按鈕開始運算')
 
 price_file    = f'{etf}歷史股價.csv'
 dividend_file = f'{etf}歷史股利.csv'
+MONTHLY_QUOTA = 10_000    # ← 固定投入金額
 
-# ---------- 核心運算 -----------------------------------------
+# ─── 回測函式（加快取）──────────────────────────────────
 @st.cache_data(show_spinner='回測運算中…')
-def backtest(price_path, div_path, quota):
+def backtest(price_path, div_path, quota=MONTHLY_QUOTA):
     stock    = pd.read_csv(price_path, encoding='utf-8-sig')
     dividend = pd.read_csv(div_path,  encoding='utf-8-sig')
 
@@ -41,7 +40,7 @@ def backtest(price_path, div_path, quota):
 
     for i in range(len(stock)):
         close = stock.loc[i, '收盤價(元)']
-        # 每月第一天
+        # 每月第一天買進
         month = int(stock.loc[i, '年月日'].split('/')[1])
         if month == month_check:
             buy = int(quota / close)
@@ -67,15 +66,12 @@ def backtest(price_path, div_path, quota):
 
     cost.pop(0); shares.pop(0); cum_div.pop(0)
     n = min(len(date), len(cost), len(cum_div), len(mkt_value))
-    return (
-        date[:n], cost[:n], cum_div[:n], mkt_value[:n],
-        shares[-1], cost[-1], mkt_value[-1]
-    )
+    return date[:n], cost[:n], cum_div[:n], mkt_value[:n]
 
-# ---------- 畫圖函式 -----------------------------------------
-def plot(date, cost, div, value, etf, shares, total_cost, total_val):
+# ─── 畫圖 ───────────────────────────────────────────────
+def plot(date, cost, div, value, etf):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.set_title(f'{etf} 每月定額 NT${monthly:,} 回測', size=16)
+    ax.set_title(f'{etf} 每月定額 NT$10,000 回測', size=16)
     ax.set_xlabel('Date'); ax.set_ylabel('Value (NTD)')
     ax.xaxis.set_major_locator(MultipleLocator(12))
     for t in ax.get_xticklabels(): t.set_rotation(45)
@@ -83,17 +79,14 @@ def plot(date, cost, div, value, etf, shares, total_cost, total_val):
     ax.plot(date, value, label='市值', color='indianred')
     ax.bar(date, cost, color='orange', label='成本')
     ax.bar(date, div, bottom=cost, color='red', label='累積股利')
+
     ax.legend(loc='upper left'); ax.grid(linewidth=0.5)
     plt.tight_layout()
-
-    st.metric('最終市值', f'NT${total_val:,}')
-    st.metric('累積成本', f'NT${total_cost:,}')
-    st.metric('持股總數', f'{shares} 股')
     return fig
 
-# ---------- 介面入口 -----------------------------------------
-st.title('台股 ETF 定期定額回測工具')
+# ─── Streamlit 介面入口 ─────────────────────────────────
+st.title('台股 ETF 定期定額回測工具（固定 NT$10,000）')
 
 if st.button('開始回測'):
-    d, c, dv, v, s, ct, mv = backtest(price_file, dividend_file, monthly)
-    st.pyplot(plot(d, c, dv, v, etf, s, ct, mv))
+    d, c, dv, v = backtest(price_file, dividend_file)
+    st.pyplot(plot(d, c, dv, v, etf))
