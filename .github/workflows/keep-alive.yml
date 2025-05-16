@@ -1,0 +1,22 @@
+name: keep Streamlit awake
+
+on:
+  schedule:
+    # 每 30 分鐘 ping 一次。GitHub Actions 最小抓 5 min，但不保證精準
+    - cron: '*/30 * * * *'
+  workflow_dispatch:      # 如有需要，可手動 Run
+
+concurrency:
+  group: keep-alive       # 若上一次還在跑就直接跳過
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up app
+        run: |
+          echo "Ping $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://wp0050-backtest-xxxxx.streamlit.app)
+          echo "HTTP status => $code"
