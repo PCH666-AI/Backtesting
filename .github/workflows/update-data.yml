@@ -31,7 +31,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [[ $(git status --porcelain | wc -l) -gt 0 ]]; then
-            git add *0056歷史股價.csv *0056歷史股利.csv
+            git add *0050歷史股價.csv *0050歷史股利.csv *0056歷史股價.csv *0056歷史股利.csv
             git commit -m "chore: auto-update CSV ($(date +'%Y-%m-%d'))"
             git push
           else
